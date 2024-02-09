@@ -24,62 +24,39 @@ BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 
 def generate_maze(width, height):
-    maze = [[0 for _ in range(width)] for _ in range(height)]
-    stack = [(0, 0)]
+  maze = [[0 for _ in range(width)] for _ in range(height)]
 
-    while stack:
-        (cx, cy) = stack[-1]
-        maze[cy][cx] = 1
-        neighbors = [(x, y) for (x, y) in [(cx-1, cy), (cx+1, cy), (cx, cy-1), (cx, cy+1)]
-                     if 0 <= x < width and 0 <= y < height and maze[y][x] == 0]
+  max_rect_size = min(width // 10, height // 10)
 
-        if neighbors:
-            (nx, ny) = random.choice(neighbors)
-            if nx == cx:
-                maze[max(ny, cy)][nx] = 1
-            else:
-                maze[ny][max(nx, cx)] = 1
-            stack.append((nx, ny))
-        else:
-            stack.pop()
+  for _ in range(width * height // max_rect_size):
+    x = random.randint(0, width - 1)
+    y = random.randint(0, height - 1)
+    w = random.randint(1, max_rect_size)
+    h = random.randint(1, max_rect_size)
 
-    return maze
+    overlaps = False
+    for i in range(max(0, y - h // 2), min(height, y + h // 2 + 1)):
+      for j in range(max(0, x - w // 2), min(width, x + w // 2 + 1)):
+        if maze[i][j] == 1:
+          overlaps = True
+          break
 
-def dfs(maze, start, end):
-    stack = [start]
-    visited = set()
+    if not overlaps:
+      for i in range(max(0, y - h // 2), min(height, y + h // 2 + 1)):
+        for j in range(max(0, x - w // 2), min(width, x + w // 2 + 1)):
+          maze[i][j] = 1
 
-    while stack:
-        (cx, cy) = stack[-1]
-        maze[cy][cx] = 0
-        visited.add((cx, cy))
-
-        if (cx, cy) == end:
-            # Remove a pixel from each chunk
-            for _ in range(len(stack) // 10):  # Assuming each chunk is 10 pixels long
-                if stack:
-                    stack.pop()
-
-            return maze
-
-        neighbors = [(x, y) for (x, y) in [(cx-1, cy), (cx+1, cy), (cx, cy-1), (cx, cy+1)]
-                     if 0 <= x < len(maze[0]) and 0 <= y < len(maze) and maze[y][x] == 1 and (x, y) not in visited]
-
-        if neighbors:
-            # Use random walk to choose a neighbor
-            (nx, ny) = random.choice(neighbors)
-            stack.append((nx, ny))
-        else:
-            stack.pop()
-
-    return maze
+  return maze
 
 # Define the size of the maze
 mazeWd, mazeHt = 30, 30
 
 # Generate the maze
 maze = generate_maze(mazeWd, mazeHt)
-maze = dfs(maze, (0, 0), (9, 9))
+
+# Print the maze
+for row in maze:
+    print(''.join([' ' if cell == 0 else '#' for cell in row]))
 
 # Define the solid area
 solidArea = [(x, y) for x in range(mazeWd) for y in range(mazeHt) if x in range(10, 20) and y in range(10, 20)]
@@ -93,8 +70,8 @@ class Player:
         self.y = y
 
     def draw(self, win):
-        pygame.draw.rect(win, BLUE, (self.x*CELL_SIZE+1, self.y*CELL_SIZE+1, CELL_SIZE-2, CELL_SIZE-2))
-
+        if 0 <= self.x < len(maze[0]) and 0 <= self.y < len(maze):
+            pygame.draw.rect(win, BLUE, (self.x * CELL_SIZE + 1, self.y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2))
     def move(self, dx, dy):
         new_x = self.x + dx
         new_y = self.y + dy
